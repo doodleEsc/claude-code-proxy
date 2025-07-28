@@ -1,7 +1,6 @@
 services:
   proxy:
     image: claude-code-proxy:latest
-    ports:
-      - 8082:8082
+    network_mode: host
     volumes:
       - ./.env:/app/.env
