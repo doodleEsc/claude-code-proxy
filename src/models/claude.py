@@ -1,13 +1,21 @@
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional, Union, Literal
 
+
+class ClaudeContentBlockTextCacheControl(BaseModel):
+    type: Literal["ephemeral"]
+
+
 class ClaudeContentBlockText(BaseModel):
     type: Literal["text"]
     text: str
+    cache_control: Optional[ClaudeContentBlockTextCacheControl] = None
+
 
 class ClaudeContentBlockImage(BaseModel):
     type: Literal["image"]
     source: Dict[str, Any]
+
 
 class ClaudeContentBlockToolUse(BaseModel):
     type: Literal["tool_use"]
@@ -15,26 +23,44 @@ class ClaudeContentBlockToolUse(BaseModel):
     name: str
     input: Dict[str, Any]
 
+
 class ClaudeContentBlockToolResult(BaseModel):
     type: Literal["tool_result"]
     tool_use_id: str
     content: Union[str, List[Dict[str, Any]], Dict[str, Any]]
 
+
 class ClaudeSystemContent(BaseModel):
     type: Literal["text"]
     text: str
+    cache_control: Optional[ClaudeContentBlockTextCacheControl] = None
+
 
 class ClaudeMessage(BaseModel):
     role: Literal["user", "assistant"]
-    content: Union[str, List[Union[ClaudeContentBlockText, ClaudeContentBlockImage, ClaudeContentBlockToolUse, ClaudeContentBlockToolResult]]]
+    content: Union[
+        str,
+        List[
+            Union[
+                ClaudeContentBlockText,
+                ClaudeContentBlockImage,
+                ClaudeContentBlockToolUse,
+                ClaudeContentBlockToolResult,
+            ]
+        ],
+    ]
+
 
 class ClaudeTool(BaseModel):
     name: str
     description: Optional[str] = None
     input_schema: Dict[str, Any]
+    cache_control: Optional[ClaudeContentBlockTextCacheControl] = None
+
 
 class ClaudeThinkingConfig(BaseModel):
     enabled: bool = True
+
 
 class ClaudeMessagesRequest(BaseModel):
     model: str
@@ -50,6 +76,7 @@ class ClaudeMessagesRequest(BaseModel):
     tools: Optional[List[ClaudeTool]] = None
     tool_choice: Optional[Dict[str, Any]] = None
     thinking: Optional[ClaudeThinkingConfig] = None
+
 
 class ClaudeTokenCountRequest(BaseModel):
     model: str

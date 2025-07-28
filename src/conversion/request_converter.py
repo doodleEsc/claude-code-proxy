@@ -15,7 +15,13 @@ def convert_claude_to_openai(
     """Convert Claude API request format to OpenAI format."""
 
     # Map model
+    is_openrouter_claude_model = False
     openai_model = model_manager.map_claude_model_to_openai(claude_request.model)
+
+    # Check if this is an OpenRouter Claude model
+    claude_model_indicators = ["haiku", "sonnet", "opus"]
+    if any(indicator in openai_model.lower() for indicator in claude_model_indicators):
+        is_openrouter_claude_model = True
 
     # Convert messages
     openai_messages = []
@@ -25,21 +31,26 @@ def convert_claude_to_openai(
         system_text = ""
         if isinstance(claude_request.system, str):
             system_text = claude_request.system
+            openai_messages.append(
+                {
+                    "role": Constants.ROLE_SYSTEM,
+                    "content": system_text.strip(),
+                }
+            )
+
         elif isinstance(claude_request.system, list):
             text_parts = []
             for block in claude_request.system:
-                if hasattr(block, "type") and block.type == Constants.CONTENT_TEXT:
-                    text_parts.append(block.text)
-                elif (
-                    isinstance(block, dict)
-                    and block.get("type") == Constants.CONTENT_TEXT
-                ):
-                    text_parts.append(block.get("text", ""))
-            system_text = "\n\n".join(text_parts)
+                content_block = block.model_dump()
+                if "cache_control" in content_block and not is_openrouter_claude_model:
+                    text_parts.append(
+                        {"type": "text", "text": content_block.get("text", "")}
+                    )
+                else:
+                    text_parts.append(content_block)
 
-        if system_text.strip():
             openai_messages.append(
-                {"role": Constants.ROLE_SYSTEM, "content": system_text.strip()}
+                {"role": Constants.ROLE_SYSTEM, "content": text_parts}
             )
 
     # Process Claude messages
@@ -48,7 +59,9 @@ def convert_claude_to_openai(
         msg = claude_request.messages[i]
 
         if msg.role == Constants.ROLE_USER:
-            openai_message = convert_claude_user_message(msg)
+            openai_message = convert_claude_user_message(
+                msg, op_claude_model=is_openrouter_claude_model
+            )
             openai_messages.append(openai_message)
         elif msg.role == Constants.ROLE_ASSISTANT:
             openai_message = convert_claude_assistant_message(msg)
@@ -84,9 +97,6 @@ def convert_claude_to_openai(
         "temperature": claude_request.temperature,
         "stream": claude_request.stream,
     }
-    logger.debug(
-        f"Converted Claude request to OpenAI format: {json.dumps(openai_request, indent=2, ensure_ascii=False)}"
-    )
     # Add optional parameters
     if claude_request.stop_sequences:
         openai_request["stop"] = claude_request.stop_sequences
@@ -98,16 +108,30 @@ def convert_claude_to_openai(
         openai_tools = []
         for tool in claude_request.tools:
             if tool.name and tool.name.strip():
-                openai_tools.append(
-                    {
-                        "type": Constants.TOOL_FUNCTION,
-                        Constants.TOOL_FUNCTION: {
-                            "name": tool.name,
-                            "description": tool.description or "",
-                            "parameters": tool.input_schema,
-                        },
-                    }
-                )
+                if tool.cache_control is not None and is_openrouter_claude_model:
+                    openai_tools.append(
+                        {
+                            "type": Constants.TOOL_FUNCTION,
+                            Constants.TOOL_FUNCTION: {
+                                "name": tool.name,
+                                "description": tool.description or "",
+                                "parameters": tool.input_schema,
+                            },
+                            "cache_control": {"type": "ephemeral"},
+                        }
+                    )
+
+                else:
+                    openai_tools.append(
+                        {
+                            "type": Constants.TOOL_FUNCTION,
+                            Constants.TOOL_FUNCTION: {
+                                "name": tool.name,
+                                "description": tool.description or "",
+                                "parameters": tool.input_schema,
+                            },
+                        }
+                    )
         if openai_tools:
             openai_request["tools"] = openai_tools
 
@@ -126,14 +150,20 @@ def convert_claude_to_openai(
         else:
             openai_request["tool_choice"] = "auto"
 
+    logger.debug(
+        f"Converted Claude request to OpenAI format: {json.dumps(openai_request, indent=2, ensure_ascii=False)}"
+    )
+
     return openai_request
 
 
-def convert_claude_user_message(msg: ClaudeMessage) -> Dict[str, Any]:
+def convert_claude_user_message(
+    msg: ClaudeMessage, op_claude_model=False
+) -> Dict[str, Any]:
     """Convert Claude user message to OpenAI format."""
     if msg.content is None:
         return {"role": Constants.ROLE_USER, "content": ""}
-    
+
     if isinstance(msg.content, str):
         return {"role": Constants.ROLE_USER, "content": msg.content}
 
@@ -141,7 +171,16 @@ def convert_claude_user_message(msg: ClaudeMessage) -> Dict[str, Any]:
     openai_content = []
     for block in msg.content:
         if block.type == Constants.CONTENT_TEXT:
-            openai_content.append({"type": "text", "text": block.text})
+            if block.cache_control is not None and op_claude_model:
+                openai_content.append(
+                    {
+                        "type": "text",
+                        "text": block.text,
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                )
+            else:
+                openai_content.append({"type": "text", "text": block.text})
         elif block.type == Constants.CONTENT_IMAGE:
             # Convert Claude image format to OpenAI format
             if (
@@ -172,7 +211,7 @@ def convert_claude_assistant_message(msg: ClaudeMessage) -> Dict[str, Any]:
 
     if msg.content is None:
         return {"role": Constants.ROLE_ASSISTANT, "content": None}
-    
+
     if isinstance(msg.content, str):
         return {"role": Constants.ROLE_ASSISTANT, "content": msg.content}
 

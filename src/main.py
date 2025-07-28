@@ -8,6 +8,21 @@ app = FastAPI(title="Claude-to-OpenAI API Proxy", version="1.0.0")
 
 app.include_router(api_router)
 
+# Configuration summary
+print("🚀 Claude-to-OpenAI API Proxy v1.0.0")
+print(f"✅ Configuration loaded successfully")
+print(f"   OpenAI Base URL: {config.openai_base_url}")
+print(f"   Big Model (opus): {config.big_model}")
+print(f"   Middle Model (sonnet): {config.middle_model}")
+print(f"   Small Model (haiku): {config.small_model}")
+print(f"   Max Tokens Limit: {config.max_tokens_limit}")
+print(f"   Request Timeout: {config.request_timeout}s")
+print(f"   Server: {config.host}:{config.port}")
+print(
+    f"   Client API Key Validation: {'Enabled' if config.anthropic_api_key else 'Disabled'}"
+)
+print("")
+
 
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "--help":
@@ -49,16 +64,18 @@ def main():
     print(f"   Max Tokens Limit: {config.max_tokens_limit}")
     print(f"   Request Timeout: {config.request_timeout}s")
     print(f"   Server: {config.host}:{config.port}")
-    print(f"   Client API Key Validation: {'Enabled' if config.anthropic_api_key else 'Disabled'}")
+    print(
+        f"   Client API Key Validation: {'Enabled' if config.anthropic_api_key else 'Disabled'}"
+    )
     print("")
 
     # Parse log level - extract just the first word to handle comments
     log_level = config.log_level.split()[0].lower()
-    
+
     # Validate and set default if invalid
-    valid_levels = ['debug', 'info', 'warning', 'error', 'critical']
+    valid_levels = ["debug", "info", "warning", "error", "critical"]
     if log_level not in valid_levels:
-        log_level = 'info'
+        log_level = "info"
 
     # Start server
     uvicorn.run(

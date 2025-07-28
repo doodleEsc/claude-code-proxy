@@ -1,8 +1,6 @@
 services:
   proxy:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: claude-code-proxy:latest
     ports:
       - 8082:8082
     volumes:

@@ -221,3 +221,10 @@ claude-code-proxy/
 ## License
 
 MIT License
+
+Error executing vim.schedule lua callback: ...re/nvim/lazy/avante.nvim/lua/avante/providers/claude.lua:141: attempt to perform arithmetic on field 'cache_creation_input_tokens' (a nil value)
+stack traceback:
+ ...re/nvim/lazy/avante.nvim/lua/avante/providers/claude.lua:141: in function 'transform_anthropic_usage'
+ ...re/nvim/lazy/avante.nvim/lua/avante/providers/claude.lua:304: in function 'parse_response'
+ ...lz/.local/share/nvim/lazy/avante.nvim/lua/avante/llm.lua:530: in function 'parse_stream_data'
+ ...lz/.local/share/nvim/lazy/avante.nvim/lua/avante/llm.lua:606: in function <...lz/.local/share/nvim/lazy/avante.nvim/lua/avante/llm.lua:602>
