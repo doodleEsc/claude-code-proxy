@@ -17,7 +17,6 @@ logger.info(f"   OpenAI Base URL: {config.openai_base_url}")
 logger.info(f"   Big Model (opus): {config.big_model}")
 logger.info(f"   Middle Model (sonnet): {config.middle_model}")
 logger.info(f"   Small Model (haiku): {config.small_model}")
-logger.info(f"   Max Tokens Limit: {config.max_tokens_limit}")
 logger.info(f"   Request Timeout: {config.request_timeout}s")
 logger.info(f"   Server: {config.host}:{config.port}")
 logger.info(

@@ -86,14 +86,16 @@ def convert_claude_to_openai(
 
         i += 1
 
+        # "max_tokens": min(
+        #     max(claude_request.max_tokens, config.min_tokens_limit),
+        #     config.max_tokens_limit,
+        # ),
+
     # Build OpenAI request
     openai_request = {
         "model": openai_model,
         "messages": openai_messages,
-        "max_tokens": min(
-            max(claude_request.max_tokens, config.min_tokens_limit),
-            config.max_tokens_limit,
-        ),
+        "max_tokens": claude_request.max_tokens,
         "temperature": claude_request.temperature,
         "stream": claude_request.stream,
     }

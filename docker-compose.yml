@@ -1,6 +1,6 @@
 services:
   proxy:
-    image: claude-code-proxy:latest
+    image: fanlz/claude-code-proxy:latest
     network_mode: host
     volumes:
       - ./.env:/app/.env
